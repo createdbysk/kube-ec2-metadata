@@ -116,7 +116,7 @@ sidecar-injector     Active   17m
 4. Verify sidecar container is injected:
 
 ```
-# kubectl get pod
+# kubectl get pod -n injection
 NAME                     READY     STATUS        RESTARTS   AGE
 alpine                   2/2       Running       0          1m
 # kubectl -n injection get pod alpine -o jsonpath="{.spec.containers[*].name}"
