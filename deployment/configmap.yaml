@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kube-ec2-metadata-sidecar-injector-webhook-configmap
-  namespace: kube-ec2-metadata-sidecar-injector
+  name: sidecar-injector-webhook-configmap
+  namespace: sidecar-injector
 data:
   sidecarconfig.yaml: |
     initContainers:
@@ -36,24 +36,22 @@ data:
       - name: AWS_ACCESS_KEY_ID
         valueFrom:
           secretKeyRef:
-            name: kube-ec2-metadata-sidecar-injector-secrets
+            name: sidecar-injector-secrets
             key: awsAccessKeyId
       - name: AWS_SECRET_ACCESS_KEY
         valueFrom:
           secretKeyRef:
-            name: kube-ec2-metadata-sidecar-injector-secrets
+            name: sidecar-injector-secrets
             key: awsSecretAccessKey
       - name: AWS_SESSION_TOKEN
         valueFrom:
           secretKeyRef:
-            name: kube-ec2-metadata-sidecar-injector-secrets
+            name: sidecar-injector-secrets
             key: awsSessionToken
       - name: AWS_DEFAULT_REGION
         valueFrom:
           configMapKeyRef:
-            # To create a config map, use
-            # kubectl create configmap kube-ec2-metadata-sidecar-injector-config --from-literal=awsRegion=${AWS_DEFAULT_REGION}
-            name: kube-ec2-metadata-sidecar-injector-config
+            name: sidecar-injector-config
             key: awsRegion
       ports:
       - containerPort: 9080

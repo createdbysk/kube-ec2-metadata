@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kube-ec2-metadata-sidecar-injector-webhook-deployment
-  namespace: kube-ec2-metadata-sidecar-injector
+  name: sidecar-injector-webhook-deployment
+  namespace: sidecar-injector
   labels:
-    app: kube-ec2-metadata-sidecar-injector
+    app: sidecar-injector
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kube-ec2-metadata-sidecar-injector
+      app: sidecar-injector
   template:
     metadata:
       labels:
-        app: kube-ec2-metadata-sidecar-injector
+        app: sidecar-injector
     spec:
       containers:
-        - name: kube-ec2-metadata-sidecar-injector
-          image: satvidh/kube-ec2-metadata-sidecar-injector:latest
+        - name: sidecar-injector
+          image: docker.io/satvidh/sidecar-injector:latest
           imagePullPolicy: IfNotPresent
           args:
           - -sidecarCfgFile=/etc/webhook/config/sidecarconfig.yaml
@@ -35,7 +35,7 @@ spec:
       volumes:
       - name: webhook-certs
         secret:
-          secretName: kube-ec2-metadata-sidecar-injector-webhook-certs
+          secretName: sidecar-injector-webhook-certs
       - name: webhook-config
         configMap:
-          name: kube-ec2-metadata-sidecar-injector-webhook-configmap
+          name: sidecar-injector-webhook-configmap

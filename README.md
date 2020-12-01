@@ -32,10 +32,10 @@ admissionregistration.k8s.io/v1beta1
 # make build
 ```
 
-2. Build docker image
+2. Build docker image and tag it as latest
    
 ```
-# make build-image
+# make tag-image-latest
 ```
 
 3. push docker image
@@ -74,7 +74,6 @@ admissionregistration.k8s.io/v1beta1
 4. Deploy resources:
 
 ```
-# kubectl create -f deployment/nginxconfigmap.yaml
 # kubectl create -f deployment/configmap.yaml
 # kubectl create -f deployment/deployment.yaml
 # kubectl create -f deployment/service.yaml
@@ -100,18 +99,27 @@ sidecar-injector-webhook-deployment   1/1     1            1           67s
 # kubectl create ns injection
 # kubectl label namespace injection sidecar-injection=enabled
 # kubectl get namespace -L sidecar-injection
-NAME                 STATUS   AGE   SIDECAR-INJECTION
-default              Active   26m
-injection            Active   13s   enabled
-kube-public          Active   26m
-kube-system          Active   26m
-sidecar-injector     Active   17m
+NAME                                    STATUS   AGE   SIDECAR-INJECTION
+default                                 Active   26m
+injection                               Active   13s   enabled
+kube-public                             Active   26m
+kube-system                             Active   26m
+sidecar-injector      Active   17m
 ```
+4. Get AWS credentials into environment
+Do whatever steps you take to get aws credentials into the environment
+variables
+AWS_DEFAULT_REGION
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+[optional] AWS_SESSION_TOKEN
+
+5. Create the config map that will hold the 
 
 3. Deploy an app in Kubernetes cluster, take `alpine` app as an example
 
 ```
-# kubectl run alpine --image=alpine --restart=Never -n injection --overrides='{"apiVersion":"v1","metadata":{"annotations":{"sidecar-injector-webhook.morven.me/inject":"yes"}}}' --command -- sleep infinity
+# kubectl run alpine --image=alpine --restart=Never -n injection --overrides='{"apiVersion":"v1","metadata":{"annotations":{"sidecar-injector-webhook.satvidh/inject":"yes"}}}' --command -- sleep infinity
 ```
 
 4. Verify sidecar container is injected:
@@ -131,4 +139,4 @@ Sometimes you may find that pod is injected with sidecar container as expected, 
 1. The sidecar-injector webhook is in running state and no error logs.
 2. The namespace in which application pod is deployed has the correct labels as configured in `mutatingwebhookconfiguration`.
 3. Check the `caBundle` is patched to `mutatingwebhookconfiguration` object by checking if `caBundle` fields is empty.
-4. Check if the application pod has annotation `sidecar-injector-webhook.morven.me/inject":"yes"`.
+4. Check if the application pod has annotation `sidecar-injector-webhook.satvidh/inject":"yes"`.

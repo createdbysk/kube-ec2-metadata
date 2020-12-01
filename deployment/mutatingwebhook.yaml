@@ -1,15 +1,15 @@
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: kube-ec2-metadata-sidecar-injector-webhook-cfg
+  name: sidecar-injector-webhook-cfg
   labels:
-    app: kube-ec2-metadata-sidecar-injector
+    app: sidecar-injector
 webhooks:
-- name: kube-ec2-metadata-sidecar-injector.satvidh
+- name: sidecar-injector.satvidh.me
   clientConfig:
     service:
-      name: kube-ec2-metadata-sidecar-injector-webhook-svc
-      namespace: kube-ec2-metadata-sidecar-injector
+      name: sidecar-injector-webhook-svc
+      namespace: sidecar-injector
       path: "/mutate"
     caBundle: ${CA_BUNDLE}
   rules:
