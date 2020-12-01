@@ -33,11 +33,11 @@ endif
 
 all: fmt lint test build image
 
-ifeq (,$(wildcard go.mod))
-ifneq ("$(realpath $(DEST))", "$(realpath $(PWD))")
-    $(error Please run 'make' from $(DEST). Current directory is $(PWD))
-endif
-endif
+# ifeq (,$(wildcard go.mod))
+# ifneq ("$(realpath $(DEST))", "$(realpath $(PWD))")
+#     $(error Please run 'make' from $(DEST). Current directory is $(PWD))
+# endif
+# endif
 
 ############################################################
 # format section
@@ -65,9 +65,9 @@ test:
 # build section
 ############################################################
 
-build:
-	@echo "Building the $(IMAGE_NAME) binary..."
-	@CGO_ENABLED=0 go build -o build/_output/bin/$(IMAGE_NAME) ./cmd/
+# build:
+# 	@echo "Building the $(IMAGE_NAME) binary..."
+# 	@CGO_ENABLED=0 go build -o build/_output/bin/$(IMAGE_NAME) ./cmd/
 
 ############################################################
 # image section
@@ -75,9 +75,9 @@ build:
 
 image: build-image push-image
 
-build-image: build
+build-image: 
 	@echo "Building the docker image: $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)..."
-	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) -f build/Dockerfile .
+	@cd src; docker build -t $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) .
 
 tag-image-latest: build-image
 	@echo "Tag the docker image for $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) as $(IMAGE_REPO)/$(IMAGE_NAME):latest..."
