@@ -1,3 +1,6 @@
+# This gets created if you follow the README instructions.
+mutatingwebhook-ca-bundle.yaml
+
 # Binaries for programs and plugins
 *.exe
 *.dll

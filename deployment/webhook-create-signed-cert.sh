@@ -99,9 +99,7 @@ EOF
 
 # verify CSR has been created
 while true; do
-    if ! kubectl get csr ${csrName}; then
-        break
-    fi
+    kubectl get csr ${csrName} && break
 done
 
 # approve and fetch the signed certificate
