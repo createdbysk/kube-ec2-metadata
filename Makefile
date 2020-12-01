@@ -77,7 +77,7 @@ image: build-image push-image
 
 build-image: 
 	@echo "Building the docker image: $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)..."
-	@cd src; docker build -t $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) . --target build
+	@cd src; docker build -t $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) .
 
 tag-image-latest: build-image
 	@echo "Tag the docker image for $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) as $(IMAGE_REPO)/$(IMAGE_NAME):latest..."

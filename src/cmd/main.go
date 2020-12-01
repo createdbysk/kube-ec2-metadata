@@ -22,7 +22,13 @@ func main() {
 	flag.StringVar(&parameters.keyFile, "tlsKeyFile", "/etc/webhook/certs/key.pem", "File containing the x509 private key to --tlsCertFile.")
 	flag.StringVar(&parameters.sidecarCfgFile, "sidecarCfgFile", "/etc/webhook/config/sidecarconfig.yaml", "File containing the mutation configuration.")
 	flag.Parse()
-
+	
+	// Tell glog to log into STDERR. Otherwise, we risk
+	// certain kinds of API errors getting logged into a directory not
+	// available in a `FROM scratch` Docker container, causing glog to abort
+	// hard with an exit code > 0.
+	flag.Set("logtostderr", "true")
+	
 	sidecarConfig, err := loadConfig(parameters.sidecarCfgFile)
 	if err != nil {
 		glog.Errorf("Failed to load configuration: %v", err)
