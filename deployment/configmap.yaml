@@ -1,20 +1,59 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: sidecar-injector-webhook-configmap
-  namespace: sidecar-injector
+  name: kube-ec2-metadata-sidecar-injector-webhook-configmap
+  namespace: kube-ec2-metadata-sidecar-injector
 data:
   sidecarconfig.yaml: |
-    containers:
-    - name: sidecar-nginx
-      image: nginx:1.12.2
+    initContainers:
+    - name: update-iptables-init
+      image: satvidh/update-iptables:latest
       imagePullPolicy: IfNotPresent
+      env:
+      - name: MOCK_METADATA_IP
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+      - name: MOCK_METADATA_PORT
+        value: 9081
+      securityContext:
+        privileged: true
+    containers:
+    - name: ectou-metadata-sidecar
+      image: satvidh/ectou-metadata:latest
+      imagePullPolicy: IfNotPresent
+      env:
+      - name: MOCK_METADATA_IP
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+      - name: MOCK_METADATA_PORT
+        value: 9081
+      - name: MOCK_METADATA_ROLE_ARN
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.annotations['iam.amazonaws.com/role']
+      - name: AWS_ACCESS_KEY_ID
+        valueFrom:
+          secretKeyRef:
+            name: kube-ec2-metadata-sidecar-injector-secrets
+            key: awsAccessKeyId
+      - name: AWS_SECRET_ACCESS_KEY
+        valueFrom:
+          secretKeyRef:
+            name: kube-ec2-metadata-sidecar-injector-secrets
+            key: awsSecretAccessKey
+      - name: AWS_SESSION_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: kube-ec2-metadata-sidecar-injector-secrets
+            key: awsSessionToken
+      - name: AWS_DEFAULT_REGION
+        valueFrom:
+          configMapKeyRef:
+            # To create a config map, use
+            # kubectl create configmap kube-ec2-metadata-sidecar-injector-config --from-literal=awsRegion=${AWS_DEFAULT_REGION}
+            name: kube-ec2-metadata-sidecar-injector-config
+            key: awsRegion
       ports:
-      - containerPort: 80
-      volumeMounts:
-      - name: nginx-conf
-        mountPath: /etc/nginx
-    volumes:
-    - name: nginx-conf
-      configMap:
-        name: nginx-configmap
+      - containerPort: 9080
