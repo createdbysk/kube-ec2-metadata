@@ -93,7 +93,7 @@ NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
 sidecar-injector-webhook-deployment   1/1     1            1           67s
 ```
 
-2. Create new namespace `injection` and label it with `sidecar-injector=enabled`:
+1. Create new namespace `injection` and label it with `sidecar-injector=enabled`:
 
 ```
 # kubectl create ns injection
@@ -106,20 +106,43 @@ kube-public                             Active   26m
 kube-system                             Active   26m
 sidecar-injector      Active   17m
 ```
-4. Get AWS credentials into environment
-Do whatever steps you take to get aws credentials into the environment
+
+1. Get AWS credentials into environment
+
+Do whatever steps you take to get aws variables into the environment
 variables
 AWS_DEFAULT_REGION
 AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
 [optional] AWS_SESSION_TOKEN
 
-5. Create the config map that will hold the 
-
-3. Deploy an app in Kubernetes cluster, take `alpine` app as an example
+1. Create secrets to hold the credentials.
 
 ```
-# kubectl run alpine --image=alpine --restart=Never -n injection --overrides='{"apiVersion":"v1","metadata":{"annotations":{"sidecar-injector-webhook.satvidh/inject":"yes"}}}' --command -- sleep infinity
+kubectl create secret generic sidecar-injector-secrets \
+    -n injection \
+    --from-literal=awsAccessKeyId=${AWS_ACCESS_KEY_ID} \
+    --from-literal=awsSecretAccessKey=${AWS_SECRET_ACCESS_KEY} \
+    --from-literal=awsSessionToken=${AWS_SESSION_TOKEN}
+```
+
+1. Create the config map that will hold the AWS_DEFAULT_REGION value.
+
+```
+# kubectl create configmap sidecar-injector-config --from-literal=awsRegion=${AWS_DEFAULT_REGION} -n injection
+```
+
+1. Set the pod role environment variables
+
+```
+POD_ROLE_NAME=<choose a pod role you want to test with>
+POD_ROLE_ARN=arn:aws:iam::$(aws sts get-caller-identity | jq .Account -r):role/${POD_ROLE_NAME}
+```
+
+1. Deploy an app in Kubernetes cluster, take `alpine` app as an example
+
+```
+# kubectl run alpine --image=alpine --restart=Never -n injection --overrides="{\"apiVersion\":\"v1\",\"metadata\":{\"annotations\":{\"sidecar-injector-webhook.satvidh/inject\":\"yes\",\"iam.amazonaws.com/role\":\"${POD_ROLE_ARN}\"}}}" --command -- sleep infinity
 ```
 
 4. Verify sidecar container is injected:

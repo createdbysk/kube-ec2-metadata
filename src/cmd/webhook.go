@@ -173,24 +173,20 @@ func addVolume(target, added []corev1.Volume, basePath string) (patch []patchOpe
 }
 
 func updateAnnotation(target map[string]string, added map[string]string) (patch []patchOperation) {
-	for key, value := range added {
-		if target == nil || target[key] == "" {
-			target = map[string]string{}
-			patch = append(patch, patchOperation{
-				Op:   "add",
-				Path: "/metadata/annotations",
-				Value: map[string]string{
-					key: value,
-				},
-			})
-		} else {
-			patch = append(patch, patchOperation{
-				Op:    "replace",
-				Path:  "/metadata/annotations/" + key,
-				Value: value,
-			})
+	// Combine what exists with added ones.
+	if target == nil {
+		target = added
+	} else {
+		for key, value := range added {
+			target[key] = value
 		}
 	}
+	// Add the whole map again.
+	patch = append(patch, patchOperation{
+		Op:   "add",
+		Path: "/metadata/annotations",
+		Value: target,
+	})
 	return patch
 }
 
@@ -198,9 +194,10 @@ func updateAnnotation(target map[string]string, added map[string]string) (patch 
 func createPatch(pod *corev1.Pod, sidecarConfig *Config, annotations map[string]string) ([]byte, error) {
 	var patch []patchOperation
 
-	patch = append(patch, addContainer(pod.Spec.Containers, sidecarConfig.InitContainers, "/spec/initContainers")...)
+	patch = append(patch, addContainer(pod.Spec.InitContainers, sidecarConfig.InitContainers, "/spec/initContainers")...)
 	patch = append(patch, addContainer(pod.Spec.Containers, sidecarConfig.Containers, "/spec/containers")...)
 	patch = append(patch, addVolume(pod.Spec.Volumes, sidecarConfig.Volumes, "/spec/volumes")...)
+	// TODO: Figure out how to do this correctly.
 	patch = append(patch, updateAnnotation(pod.Annotations, annotations)...)
 
 	return json.Marshal(patch)

@@ -1,4 +1,4 @@
-module github.com/morvencao/kube-mutating-webhook-tutorial
+module github.com/satvidh/kube-ec2-metadata
 
 go 1.13
 
