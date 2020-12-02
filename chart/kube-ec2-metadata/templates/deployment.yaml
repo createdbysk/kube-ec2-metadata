@@ -1,0 +1,43 @@
+{{- $name := include "kube-ec2-metadata.sidecarName" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}-deployment
+  namespace: {{ include "kube-ec2-metadata.sidecarNamespace" . }}
+  labels:
+    app: {{ $name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+    spec:
+      containers:
+        - name: {{ $name }}
+          {{- with .Values.image }}
+          {{- include "kube-ec2-metadata.image" . | indent 10 }}
+          {{- end }}
+          args:
+          - -sidecarCfgFile=/etc/webhook/config/sidecarconfig.yaml
+          - -tlsCertFile=/etc/webhook/certs/cert.pem
+          - -tlsKeyFile=/etc/webhook/certs/key.pem
+          - -alsologtostderr
+          - -v=4
+          - 2>&1
+          volumeMounts:
+          - name: webhook-certs
+            mountPath: /etc/webhook/certs
+            readOnly: true
+          - name: webhook-config
+            mountPath: /etc/webhook/config
+      volumes:
+      - name: webhook-certs
+        secret:
+          secretName: {{ $name }}-certs
+      - name: webhook-config
+        configMap:
+          name: {{ $name }}-configmap

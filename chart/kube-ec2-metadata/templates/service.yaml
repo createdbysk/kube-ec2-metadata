@@ -1,0 +1,14 @@
+{{- $name := include "kube-ec2-metadata.sidecarName" . }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}-svc
+  namespace: {{ include "kube-ec2-metadata.sidecarNamespace" . }}
+  labels:
+    app: {{ $name }}
+spec:
+  ports:
+  - port: 443
+    targetPort: 8443
+  selector:
+    app: {{ $name }}
