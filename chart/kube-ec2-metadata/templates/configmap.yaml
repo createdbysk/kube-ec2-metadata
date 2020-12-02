@@ -57,4 +57,4 @@ data:
             name: {{ $name }}-config
             key: awsRegion
       ports:
-      - containerPort: 9080
+      - containerPort: {{ include "kube-ec2-metadata.mockMetadataSidecarContainerPort" . }}

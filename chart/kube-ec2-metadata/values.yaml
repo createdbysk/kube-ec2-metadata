@@ -79,7 +79,8 @@ tolerations: []
 affinity: {}
 
 mockMetadata:
-  port: 9081
+  # port: # default 9081
+  # sidecarContainerPort: # default 9080
   image:
     repository: satvidh/ectou-metadata
     tag: ""

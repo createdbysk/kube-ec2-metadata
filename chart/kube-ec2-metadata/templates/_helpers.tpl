@@ -13,6 +13,11 @@
 {{- .Values.mockMetadata.port | default 9081 | quote }}
 {{- end }}
 
+{{/* Compute the port for the mock metadata sidecar container */}}
+{{- define "kube-ec2-metadata.mockMetadataSidecarContainerPort" }}
+{{- .Values.mockMetadata.sidecarContainerPort | default 9080 | quote }}
+{{- end }}
+
 {{/* Compute image tag */}}
 {{- define "kube-ec2-metadata.image" }}
 image: "{{ .repository }}:{{ .tag | default "latest" }}"
