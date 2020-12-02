@@ -1,0 +1,23 @@
+{{- $name := include "kube-ec2-metadata.sidecarName" . }}
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ $name }}-cfg
+  labels:
+    app: {{ $name }}
+webhooks:
+- name: {{ include "kube-ec2-metadata.webhookUrl" . }}
+  clientConfig:
+    service:
+      name: {{ $name }}-svc
+      namespace: {{ $name }}
+      path: "/mutate"
+    caBundle: {{ required "caBundle must be provided through --set" .Values.caBundle }}
+  rules:
+  - operations: ["CREATE", "UPDATE"]
+    apiGroups: [""]
+    apiVersions: ["v1"]
+    resources: ["pods"]
+  namespaceSelector:
+    matchLabels:
+      sidecar-injection: enabled

@@ -23,3 +23,9 @@
 image: "{{ .repository }}:{{ .tag | default "latest" }}"
 imagePullPolicy: {{ .pullPolicy | default "IfNotPresent" }}
 {{- end }}
+
+{{/* Compute image webhook url */}}
+{{- define "kube-ec2-metadata.webhookUrl" }}
+{{- $name := ( include "kube-ec2-metadata.sidecarName" . ) -}}
+{{- default cat $name ".satvidh.me" .Values.webhookUrlOverride }}
+{{- end }}
