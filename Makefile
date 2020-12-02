@@ -4,6 +4,9 @@
 IMAGE_REPO ?= docker.io/satvidh
 IMAGE_NAME ?= sidecar-injector
 
+INJECTOR_NAMESPACE ?= sidecar-injector
+INJECTION_NAMESPACE ?= injection
+
 # Github host to use for checking the source tree;
 # Override this variable ue with your own value if you're working on forked repo.
 GIT_HOST ?= github.com/satvidh
@@ -11,47 +14,15 @@ GIT_HOST ?= github.com/satvidh
 PWD := $(shell pwd)
 BASE_DIR := $(shell basename $(PWD))
 
-# Keep an existing GOPATH, make a private one if it is undefined
-GOPATH_DEFAULT := $(PWD)/.go
-export GOPATH ?= $(GOPATH_DEFAULT)
-TESTARGS_DEFAULT := "-v"
-export TESTARGS ?= $(TESTARGS_DEFAULT)
-DEST := $(GOPATH)/src/$(GIT_HOST)/$(BASE_DIR)
-IMAGE_TAG ?= $(shell date +v%Y%m%d)-$(shell git describe --match=$(git rev-parse --short=8 HEAD) --tags --always --dirty)
-
-
-LOCAL_OS := $(shell uname)
-ifeq ($(LOCAL_OS),Linux)
-    TARGET_OS ?= linux
-    XARGS_FLAGS="-r"
-else ifeq ($(LOCAL_OS),Darwin)
-    TARGET_OS ?= darwin
-    XARGS_FLAGS=
-else
-    $(error "This system's OS $(LOCAL_OS) isn't recognized/supported")
-endif
-
-all: fmt lint test build image
-
-# ifeq (,$(wildcard go.mod))
-# ifneq ("$(realpath $(DEST))", "$(realpath $(PWD))")
-#     $(error Please run 'make' from $(DEST). Current directory is $(PWD))
-# endif
-# endif
-
 ############################################################
-# format section
+# guard section
 ############################################################
 
-fmt:
-	@echo "Run go fmt..."
-
-############################################################
-# lint section
-############################################################
-
-lint:
-	@echo "Runing the golangci-lint..."
+guard-%:
+	@ if [ "${${*}}" = "" ]; then \
+        echo "Environment variable $* not set"; \
+        exit 1; \
+	fi
 
 ############################################################
 # test section
@@ -61,14 +32,13 @@ test:
 	@echo "Running the tests for $(IMAGE_NAME)..."
 	@go test $(TESTARGS) ./...
 
-############################################################
-# build section
-############################################################
-
-# build:
-# 	@echo "Building the $(IMAGE_NAME) binary..."
-# 	@CGO_ENABLED=0 go build -o build/_output/bin/$(IMAGE_NAME) ./cmd/
-
+test-install: guard-POD_ROLE_NAME clean-test-install
+	@echo "Running alpine image to test installation..."
+	@kubectl run alpine --image=alpine --restart=Never \
+		-n $(INJECTION_NAMESPACE) \
+		--overrides="{\"apiVersion\":\"v1\",\"metadata\":{\"annotations\":{\"sidecar-injector-webhook.satvidh/inject\":\"yes\",\"iam.amazonaws.com/role\":\"arn:aws:iam::$(shell aws sts get-caller-identity | jq .Account -r):role/$(POD_ROLE_NAME)\"}}}" \
+		--command -- sleep infinity
+	@sleep 10; kubectl get pods -n $(INJECTION_NAMESPACE)
 ############################################################
 # image section
 ############################################################
@@ -88,11 +58,53 @@ push-image: build-image tag-image-latest
 	@docker push $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
 	@docker push $(IMAGE_REPO)/$(IMAGE_NAME):latest
 
+build:
+	mkdir -p build
+
+install: clean build
+	-@kubectl create ns $(INJECTOR_NAMESPACE)
+	./deployment/webhook-create-signed-cert.sh \
+    	--service sidecar-injector-webhook-svc \
+    	--secret sidecar-injector-webhook-certs \
+    	--namespace $(INJECTOR_NAMESPACE)
+	cat deployment/mutatingwebhook.yaml | \
+		deployment/webhook-patch-ca-bundle.sh > \
+		build/mutatingwebhook-ca-bundle.yaml
+	kubectl create -f deployment/configmap.yaml
+	kubectl create -f deployment/deployment.yaml
+	kubectl create -f deployment/service.yaml
+	kubectl create -f build/mutatingwebhook-ca-bundle.yaml
+
+injection:
+	@echo "Checking aws credentials..."
+	@aws sts get-caller-identity
+	-@kubectl create ns $(INJECTION_NAMESPACE)
+	@kubectl label namespace $(INJECTION_NAMESPACE) sidecar-injection=enabled
+	@kubectl create secret generic sidecar-injector-secrets \
+		-n $(INJECTION_NAMESPACE) \
+		--from-literal=awsAccessKeyId=${AWS_ACCESS_KEY_ID} \
+		--from-literal=awsSecretAccessKey=${AWS_SECRET_ACCESS_KEY} \
+		--from-literal=awsSessionToken=${AWS_SESSION_TOKEN}
+	@kubectl create configmap sidecar-injector-config \
+		--from-literal=awsRegion=${AWS_DEFAULT_REGION} \
+		-n $(INJECTION_NAMESPACE)
+
 ############################################################
 # clean section
 ############################################################
-clean:
-	@rm -rf build/_output
+clean-test-install:
+	-@kubectl delete pod alpine -n $(INJECTION_NAMESPACE)
 
-.PHONY: all fmt lint check test build image clean
+clean-injection:
+	-@kubectl delete ns $(INJECTION_NAMESPACE)
+
+clean-injector:
+	-@kubectl delete -f build/mutatingwebhook-ca-bundle.yaml
+	-@kubectl delete ns $(INJECTOR_NAMESPACE)
+
+clean: clean-injection clean-injector
+	@rm -rf build
+	
+
+.PHONY: all fmt lint check test image install injection clean
 

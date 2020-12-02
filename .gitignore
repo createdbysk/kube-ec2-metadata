@@ -1,5 +1,5 @@
-# This gets created if you follow the README instructions.
-mutatingwebhook-ca-bundle.yaml
+# Created as part of the install process
+build/
 
 # Binaries for programs and plugins
 *.exe

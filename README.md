@@ -28,77 +28,107 @@ admissionregistration.k8s.io/v1beta1
 
 1. Build binary
 
-```
-# make build
+```sh
+make build
 ```
 
-2. Build docker image and tag it as latest
+1. Build docker image and tag it as latest
    
+```sh
+make tag-image-latest
 ```
-# make tag-image-latest
-```
-
-3. push docker image
-
-```
-# make push-image
-```
-
-> Note: log into the docker registry before pushing the image.
 
 ## Deploy
 
+### With defaults
+
+- Install the injector
+
+```sh
+make install
+```
+
+- Get AWS credentials into environment to prepare for injection.
+
+Do whatever steps you take to get aws variables into the environment
+variables
+AWS_DEFAULT_REGION
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+[optional] AWS_SESSION_TOKEN
+
+- Setup the namespace for injection
+
+```sh
+make injection
+```
+
+- Test the install.
+
+```sh
+make test-install
+```
+
+If you see output like below, its all good.
+
+```sh
+NAME     READY   STATUS    RESTARTS   AGE
+alpine   2/2     Running   0          21s
+```
+
+### What happens in Deploy
+
 1. Create namespace `sidecar-injector` in which the sidecar injector webhook is deployed:
 
-```
-# kubectl create ns sidecar-injector
+```sh
+kubectl create ns sidecar-injector
 ```
 
-2. Create a signed cert/key pair and store it in a Kubernetes `secret` that will be consumed by sidecar injector deployment:
+1. Create a signed cert/key pair and store it in a Kubernetes `secret` that will be consumed by sidecar injector deployment:
 
-```
-# ./deployment/webhook-create-signed-cert.sh \
+```sh
+./deployment/webhook-create-signed-cert.sh \
     --service sidecar-injector-webhook-svc \
     --secret sidecar-injector-webhook-certs \
     --namespace sidecar-injector
 ```
 
-3. Patch the `MutatingWebhookConfiguration` by set `caBundle` with correct value from Kubernetes cluster:
+1. Patch the `MutatingWebhookConfiguration` by set `caBundle` with correct value from Kubernetes cluster:
 
-```
-# cat deployment/mutatingwebhook.yaml | \
+```sh
+cat deployment/mutatingwebhook.yaml | \
     deployment/webhook-patch-ca-bundle.sh > \
     deployment/mutatingwebhook-ca-bundle.yaml
 ```
 
-4. Deploy resources:
+1. Deploy resources:
 
-```
-# kubectl create -f deployment/configmap.yaml
-# kubectl create -f deployment/deployment.yaml
-# kubectl create -f deployment/service.yaml
-# kubectl create -f deployment/mutatingwebhook-ca-bundle.yaml
+```sh
+kubectl create -f deployment/configmap.yaml
+kubectl create -f deployment/deployment.yaml
+kubectl create -f deployment/service.yaml
+kubectl create -f deployment/mutatingwebhook-ca-bundle.yaml
 ```
 
 ## Verify
 
 1. The sidecar inject webhook should be in running state:
 
-```
-# kubectl -n sidecar-injector get pod
+```sh
+kubectl -n sidecar-injector get pod
 NAME                                                   READY   STATUS    RESTARTS   AGE
 sidecar-injector-webhook-deployment-7c8bc5f4c9-28c84   1/1     Running   0          30s
-# kubectl -n sidecar-injector get deploy
+kubectl -n sidecar-injector get deploy
 NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
 sidecar-injector-webhook-deployment   1/1     1            1           67s
 ```
 
 1. Create new namespace `injection` and label it with `sidecar-injector=enabled`:
 
-```
-# kubectl create ns injection
-# kubectl label namespace injection sidecar-injection=enabled
-# kubectl get namespace -L sidecar-injection
+```sh
+kubectl create ns injection
+kubectl label namespace injection sidecar-injection=enabled
+kubectl get namespace -L sidecar-injection
 NAME                                    STATUS   AGE   SIDECAR-INJECTION
 default                                 Active   26m
 injection                               Active   13s   enabled
@@ -118,7 +148,7 @@ AWS_SECRET_ACCESS_KEY
 
 1. Create secrets to hold the credentials.
 
-```
+```sh
 kubectl create secret generic sidecar-injector-secrets \
     -n injection \
     --from-literal=awsAccessKeyId=${AWS_ACCESS_KEY_ID} \
@@ -128,30 +158,30 @@ kubectl create secret generic sidecar-injector-secrets \
 
 1. Create the config map that will hold the AWS_DEFAULT_REGION value.
 
-```
-# kubectl create configmap sidecar-injector-config --from-literal=awsRegion=${AWS_DEFAULT_REGION} -n injection
+```sh
+kubectl create configmap sidecar-injector-config --from-literal=awsRegion=${AWS_DEFAULT_REGION} -n injection
 ```
 
 1. Set the pod role environment variables
 
-```
+```sh
 POD_ROLE_NAME=<choose a pod role you want to test with>
 POD_ROLE_ARN=arn:aws:iam::$(aws sts get-caller-identity | jq .Account -r):role/${POD_ROLE_NAME}
 ```
 
 1. Deploy an app in Kubernetes cluster, take `alpine` app as an example
 
-```
-# kubectl run alpine --image=alpine --restart=Never -n injection --overrides="{\"apiVersion\":\"v1\",\"metadata\":{\"annotations\":{\"sidecar-injector-webhook.satvidh/inject\":\"yes\",\"iam.amazonaws.com/role\":\"${POD_ROLE_ARN}\"}}}" --command -- sleep infinity
+```sh
+kubectl run alpine --image=alpine --restart=Never -n injection --overrides="{\"apiVersion\":\"v1\",\"metadata\":{\"annotations\":{\"sidecar-injector-webhook.satvidh/inject\":\"yes\",\"iam.amazonaws.com/role\":\"${POD_ROLE_ARN}\"}}}" --command -- sleep infinity
 ```
 
-4. Verify sidecar container is injected:
+1. Verify sidecar container is injected:
 
-```
-# kubectl get pod -n injection
+```sh
+kubectl get pod -n injection
 NAME                     READY     STATUS        RESTARTS   AGE
 alpine                   2/2       Running       0          1m
-# kubectl -n injection get pod alpine -o jsonpath="{.spec.containers[*].name}"
+kubectl -n injection get pod alpine -o jsonpath="{.spec.containers[*].name}"
 alpine sidecar-nginx
 ```
 
@@ -163,3 +193,14 @@ Sometimes you may find that pod is injected with sidecar container as expected, 
 2. The namespace in which application pod is deployed has the correct labels as configured in `mutatingwebhookconfiguration`.
 3. Check the `caBundle` is patched to `mutatingwebhookconfiguration` object by checking if `caBundle` fields is empty.
 4. Check if the application pod has annotation `sidecar-injector-webhook.satvidh/inject":"yes"`.
+
+## Evolve
+
+### Certificate management
+
+#### Install Cert Manager
+
+- [Install Cert Manager](https://cert-manager.io/docs/installation/kubernetes/)
+  - Use the [kubectl plugn](https://cert-manager.io/docs/usage/kubectl-plugin/) method described in the above document.
+
+#### 
