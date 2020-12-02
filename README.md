@@ -203,4 +203,6 @@ Sometimes you may find that pod is injected with sidecar container as expected, 
 - [Install Cert Manager](https://cert-manager.io/docs/installation/kubernetes/)
   - Use the [kubectl plugn](https://cert-manager.io/docs/usage/kubectl-plugin/) method described in the above document.
 
-#### 
+### Helm charts
+
+https://helm.sh/docs/topics/chart_repository/

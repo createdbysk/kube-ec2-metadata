@@ -1,0 +1,60 @@
+{{- $name := include "kube-ec2-metadata.sidecarName" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-configmap
+  namespace: {{ include "kube-ec2-metadata.sidecarNamespace" . }}
+data:
+  sidecarconfig.yaml: |-
+    initContainers:
+    - name: update-iptables-init
+      {{- with .Values.updateIptables.image }}
+      {{- include "kube-ec2-metadata.image" . | indent 6 }}
+      {{- end }}
+      env:
+      - name: MOCK_METADATA_IP
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+      - name: MOCK_METADATA_PORT
+        value: {{ include "kube-ec2-metadata.mockMetadataPort" . }}
+      securityContext:
+        privileged: true
+    containers:
+    - name: mock-metadata-sidecar
+      {{- with .Values.mockMetadata.image }}
+      {{- include "kube-ec2-metadata.image" . | indent 6 }}
+      {{- end }}
+      env:
+      - name: MOCK_METADATA_IP
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+      - name: MOCK_METADATA_PORT
+        value: {{ include "kube-ec2-metadata.mockMetadataPort" . }}
+      - name: MOCK_METADATA_ROLE_ARN
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.annotations['{{ .Values.mockMetadata.annotation }}']
+      - name: AWS_ACCESS_KEY_ID
+        valueFrom:
+          secretKeyRef:
+            name: {{ $name }}-secrets
+            key: awsAccessKeyId
+      - name: AWS_SECRET_ACCESS_KEY
+        valueFrom:
+          secretKeyRef:
+            name: {{ $name }}-secrets
+            key: awsSecretAccessKey
+      - name: AWS_SESSION_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: {{ $name }}-secrets
+            key: awsSessionToken
+      - name: AWS_DEFAULT_REGION
+        valueFrom:
+          configMapKeyRef:
+            name: {{ $name }}-config
+            key: awsRegion
+      ports:
+      - containerPort: 9080
