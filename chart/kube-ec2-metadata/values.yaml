@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: nginx
+  repository: docker.io/satvidh/sidecar-injector
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -82,14 +82,16 @@ mockMetadata:
   # port: # default 9081
   # sidecarContainerPort: # default 9080
   image:
-    repository: satvidh/ectou-metadata
-    tag: ""
+    repository: docker.io/satvidh/ectou-metadata
     pullPolicy: IfNotPresent
+    # latest if not provided.
+    tag: ""
   annotation: "iam.amazonaws.com/role"
 
 updateIptables:
   image:
-    repository: satvidh/update-iptables
-    tag: ""
+    repository: docker.io/satvidh/update-iptables
     pullPolicy: IfNotPresent
+    # latest if not provided.
+    tag: ""
 
