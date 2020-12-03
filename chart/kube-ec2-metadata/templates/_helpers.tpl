@@ -5,7 +5,7 @@
 
 {{/* Compute the namespace */}}
 {{- define "kube-ec2-metadata.sidecarNamespace" }}
-{{- ( eq .Release.Namespace "default" ) | ternary ( default "sidecar-injector" .Values.sidecarInjectorNamespace ) .Release.Namespace  | trunc 63 | trimSuffix "-" }}
+{{- default "sidecar-injector" .Values.sidecarInjectorNamespaceOverride  | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/* Compute the port for the mock metadata api */}}

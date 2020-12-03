@@ -70,9 +70,8 @@ install: clean build
     	--namespace $(INJECTOR_NAMESPACE)
 	@helm install $(HELM_RELEASE_NAME) \
 		--set caBundle=$(shell ./scripts/echo_ca_bundle.sh) \
+		--set sidecarInjectorNamespaceOverride=$(INJECTOR_NAMESPACE) \
 		chart/kube-ec2-metadata
-		
-		# --namespace $(INJECTOR_NAMESPACE) \
 
 injection:
 	@echo "Checking aws credentials..."
