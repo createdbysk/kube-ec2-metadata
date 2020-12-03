@@ -29,3 +29,23 @@ imagePullPolicy: {{ .pullPolicy | default "IfNotPresent" }}
 {{- $name := ( include "kube-ec2-metadata.sidecarName" . ) -}}
 {{- default ( nospace ( cat $name ".satvidh.me" ) ) .Values.webhookUrlOverride }}
 {{- end }}
+
+{{/* Compute configmap name */}}
+{{- define "kube-ec2-metadata.configMapName" }}
+{{- nospace (cat ( include "kube-ec2-metadata.sidecarName" . ) "-webhook-configmap" ) -}}
+{{- end }}
+
+{{/* Compute deployment name */}}
+{{- define "kube-ec2-metadata.deploymentName" }}
+{{- nospace (cat ( include "kube-ec2-metadata.sidecarName" . ) "-webhook-deployment" ) -}}
+{{- end }}
+
+{{/* Compute service name */}}
+{{- define "kube-ec2-metadata.serviceName" }}
+{{- nospace (cat ( include "kube-ec2-metadata.sidecarName" . ) "-webhook-svc" ) -}}
+{{- end }}
+
+{{/* Compute deployment name */}}
+{{- define "kube-ec2-metadata.mutatingWebhookCfgName" }}
+{{- nospace (cat ( include "kube-ec2-metadata.sidecarName" . ) "-webhook-cfg" ) -}}
+{{- end }}

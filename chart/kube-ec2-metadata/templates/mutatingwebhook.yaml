@@ -2,14 +2,14 @@
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: {{ $name }}-webhook-cfg
+  name: {{ include "kube-ec2-metadata.mutatingWebhookCfgName" . }}
   labels:
     app: {{ $name }}
 webhooks:
 - name: {{ include "kube-ec2-metadata.webhookUrl" . }}
   clientConfig:
     service:
-      name: {{ $name }}-webhook-svc
+      name: {{ include "kube-ec2-metadata.serviceName" . }}
       namespace: {{ $name }}
       path: "/mutate"
     caBundle: {{ required "caBundle must be provided through --set" .Values.caBundle }}

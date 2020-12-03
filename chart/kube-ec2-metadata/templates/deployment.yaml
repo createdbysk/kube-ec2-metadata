@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $name }}-webhook-deployment
+  name: {{ include "kube-ec2-metadata.deploymentName" . }}
   namespace: {{ include "kube-ec2-metadata.sidecarNamespace" . }}
   labels:
     app: {{ $name }}
