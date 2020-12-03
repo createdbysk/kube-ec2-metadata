@@ -4,7 +4,7 @@ metadata:
   name: sidecar-injector-webhook-configmap
   namespace: sidecar-injector
 data:
-  sidecarconfig.yaml: |
+  sidecarconfig.yaml: |-
     initContainers:
     - name: update-iptables-init
       image: satvidh/update-iptables:latest

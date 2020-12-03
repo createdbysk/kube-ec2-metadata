@@ -1,5 +1,6 @@
 # Created as part of the install process
 build/
+debug/
 
 # Binaries for programs and plugins
 *.exe

@@ -4,6 +4,7 @@
 IMAGE_REPO ?= docker.io/satvidh
 IMAGE_NAME ?= sidecar-injector
 
+HELM_RELEASE_NAME ?= sidecar-injector
 INJECTOR_NAMESPACE ?= sidecar-injector
 INJECTION_NAMESPACE ?= injection
 
@@ -63,29 +64,27 @@ build:
 
 install: clean build
 	-@kubectl create ns $(INJECTOR_NAMESPACE)
-	./deployment/webhook-create-signed-cert.sh \
-    	--service sidecar-injector-webhook-svc \
-    	--secret sidecar-injector-webhook-certs \
+	@./scripts/webhook-create-signed-cert.sh \
+    	--service $(HELM_RELEASE_NAME)-webhook-svc \
+    	--secret $(HELM_RELEASE_NAME)-webhook-certs \
     	--namespace $(INJECTOR_NAMESPACE)
-	cat deployment/mutatingwebhook.yaml | \
-		deployment/webhook-patch-ca-bundle.sh > \
-		build/mutatingwebhook-ca-bundle.yaml
-	kubectl create -f deployment/configmap.yaml
-	kubectl create -f deployment/deployment.yaml
-	kubectl create -f deployment/service.yaml
-	kubectl create -f build/mutatingwebhook-ca-bundle.yaml
+	@helm install $(HELM_RELEASE_NAME) \
+		--set caBundle=$(shell ./scripts/echo_ca_bundle.sh) \
+		chart/kube-ec2-metadata
+		
+		# --namespace $(INJECTOR_NAMESPACE) \
 
 injection:
 	@echo "Checking aws credentials..."
 	@aws sts get-caller-identity
 	-@kubectl create ns $(INJECTION_NAMESPACE)
 	@kubectl label namespace $(INJECTION_NAMESPACE) sidecar-injection=enabled
-	@kubectl create secret generic sidecar-injector-secrets \
+	@kubectl create secret generic $(HELM_RELEASE_NAME)-secrets \
 		-n $(INJECTION_NAMESPACE) \
 		--from-literal=awsAccessKeyId=${AWS_ACCESS_KEY_ID} \
 		--from-literal=awsSecretAccessKey=${AWS_SECRET_ACCESS_KEY} \
 		--from-literal=awsSessionToken=${AWS_SESSION_TOKEN}
-	@kubectl create configmap sidecar-injector-config \
+	@kubectl create configmap $(HELM_RELEASE_NAME)-config \
 		--from-literal=awsRegion=${AWS_DEFAULT_REGION} \
 		-n $(INJECTION_NAMESPACE)
 
@@ -99,10 +98,10 @@ clean-injection:
 	-@kubectl delete ns $(INJECTION_NAMESPACE)
 
 clean-injector:
-	-@kubectl delete -f build/mutatingwebhook-ca-bundle.yaml
+	-@helm uninstall $(HELM_RELEASE_NAME)
 	-@kubectl delete ns $(INJECTOR_NAMESPACE)
 
-clean: clean-injection clean-injector
+clean: clean-test-install clean-injection clean-injector
 	@rm -rf build
 	
 

@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $name }}-deployment
+  name: {{ $name }}-webhook-deployment
   namespace: {{ include "kube-ec2-metadata.sidecarNamespace" . }}
   labels:
     app: {{ $name }}
@@ -37,7 +37,7 @@ spec:
       volumes:
       - name: webhook-certs
         secret:
-          secretName: {{ $name }}-certs
+          secretName: {{ $name }}-webhook-certs
       - name: webhook-config
         configMap:
-          name: {{ $name }}-configmap
+          name: {{ $name }}-webhook-configmap

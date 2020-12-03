@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ $name }}-configmap
+  name: {{ $name }}-webhook-configmap
   namespace: {{ include "kube-ec2-metadata.sidecarNamespace" . }}
 data:
   sidecarconfig.yaml: |-
