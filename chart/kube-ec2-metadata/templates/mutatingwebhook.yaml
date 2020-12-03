@@ -9,7 +9,7 @@ webhooks:
 - name: {{ include "kube-ec2-metadata.webhookUrl" . }}
   clientConfig:
     service:
-      name: {{ $name }}-svc
+      name: {{ $name }}-webhook-svc
       namespace: {{ $name }}
       path: "/mutate"
     caBundle: {{ required "caBundle must be provided through --set" .Values.caBundle }}
