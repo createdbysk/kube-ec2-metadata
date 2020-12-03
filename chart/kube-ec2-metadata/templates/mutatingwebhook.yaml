@@ -10,7 +10,7 @@ webhooks:
   clientConfig:
     service:
       name: {{ include "kube-ec2-metadata.serviceName" . }}
-      namespace: {{ $name }}
+      namespace: {{ include "kube-ec2-metadata.sidecarNamespace" . }}
       path: "/mutate"
     caBundle: {{ required "caBundle must be provided through --set" .Values.caBundle }}
   rules:
