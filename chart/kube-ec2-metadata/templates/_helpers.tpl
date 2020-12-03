@@ -32,20 +32,31 @@ imagePullPolicy: {{ .pullPolicy | default "IfNotPresent" }}
 
 {{/* Compute configmap name */}}
 {{- define "kube-ec2-metadata.configMapName" }}
-{{- nospace (cat ( include "kube-ec2-metadata.sidecarName" . ) "-webhook-configmap" ) -}}
+{{- include "kube-ec2-metadata.sidecarName" . }}-webhook-configmap
 {{- end }}
 
 {{/* Compute deployment name */}}
 {{- define "kube-ec2-metadata.deploymentName" }}
-{{- nospace (cat ( include "kube-ec2-metadata.sidecarName" . ) "-webhook-deployment" ) -}}
+{{- include "kube-ec2-metadata.sidecarName" . }}-webhook-deployment
 {{- end }}
 
 {{/* Compute service name */}}
+{{/* This does not follow the patterns of the other names */}}
+{{/* because this name is used directly in the Makefile. */}}
+{{/* where it is named $(HELM_RELEASE_NAME)-webhook-svc. */}}
 {{- define "kube-ec2-metadata.serviceName" }}
-{{- nospace (cat ( include "kube-ec2-metadata.sidecarName" . ) "-webhook-svc" ) -}}
+{{- .Release.Name }}-webhook-svc
 {{- end }}
 
 {{/* Compute deployment name */}}
 {{- define "kube-ec2-metadata.mutatingWebhookCfgName" }}
 {{- nospace (cat ( include "kube-ec2-metadata.sidecarName" . ) "-webhook-cfg" ) -}}
+{{- end }}
+
+{{/* Compute webhook certs secret name */}}
+{{/* This does not follow the patterns of the other names */}}
+{{/* because this name is used directly in the Makefile. */}}
+{{/* where it is named $(HELM_RELEASE_NAME)-webhook-certs. */}}
+{{- define "kube-ec2-metadata.webhookCertsSecretName" }}
+{{- .Release.Name }}-webhook-certs
 {{- end }}

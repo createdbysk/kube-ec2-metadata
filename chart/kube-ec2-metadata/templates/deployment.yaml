@@ -37,7 +37,7 @@ spec:
       volumes:
       - name: webhook-certs
         secret:
-          secretName: {{ $name }}-webhook-certs
+          secretName: {{ include "kube-ec2-metadata.webhookCertsSecretName" . }}
       - name: webhook-config
         configMap:
           name: {{ $name }}-webhook-configmap
